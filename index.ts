@@ -88,6 +88,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             } else {
                 await ctx.reply("Match not found")
             }
+            return
         } else if (callbackQuery?.data === "m-losers") {
             await ctx.reply("Please enter Match ID:")
             const { message } = await convo.wait()
@@ -118,6 +119,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             } else {
                 await ctx.reply("Match not found")
             }
+            return
         } else if (callbackQuery?.data === "m-bettors") {
             await ctx.reply("Please enter Match ID:")
             const { message } = await convo.wait()
@@ -146,10 +148,11 @@ async function start(convo: MyConversation, ctx: MyContext) {
             } else {
                 await ctx.reply("Match not found")
             }
+            return
         } else {
             await ctx.reply("Invalid Reply")
+            return
         }
-        return
     } catch (e) {
         console.log(e)
         await ctx.reply("An error occured")
