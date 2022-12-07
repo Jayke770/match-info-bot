@@ -4,8 +4,6 @@ if (process.env.NODE_ENV !== "production") config()
 import fetch from 'node-fetch'
 import fs from 'fs-extra'
 import { Bot, type Context, session, InlineKeyboard, InputFile } from 'grammy'
-import { run } from "@grammyjs/runner"
-import { apiThrottler } from "@grammyjs/transformer-throttler"
 import { type Conversation, type ConversationFlavor, conversations, createConversation, } from "@grammyjs/conversations"
 type MyContext = Context & ConversationFlavor
 type MyConversation = Conversation<MyContext>
@@ -45,8 +43,6 @@ type Match = {
 }
 //@ts-ignore
 const bot = new Bot<MyContext>(process.env.BOT_TOKEN)
-const throttler = apiThrottler()
-bot.api.config.use(throttler)
 bot.use(session({ initial: () => ({}) }))
 bot.use(conversations())
 async function start(convo: MyConversation, ctx: MyContext) {
@@ -169,11 +165,11 @@ bot.command("start", async (ctx) => {
         await ctx.reply("401 Unauthorized")
     }
 })
-run(bot)
 const setup = async () => {
     await bot.api.setMyCommands([
         { command: 'start', description: "Start Bot" }
     ])
+    await bot.start()
 }
 setup()
 console.log("> Bot Started")
