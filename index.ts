@@ -66,7 +66,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             const { message } = await convo.wait()
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
-            if (MATCH_DATA) {
+            if (MATCH_DATA._id) {
                 file_name = `${nanoid(5)}-${message?.text}-WINNERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
@@ -98,7 +98,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             const { message } = await convo.wait()
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
-            if (MATCH_DATA) {
+            if (MATCH_DATA._id) {
                 file_name = `${nanoid(5)}-${message?.text}-LOSERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
@@ -130,7 +130,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             const { message } = await convo.wait()
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
-            if (MATCH_DATA) {
+            if (MATCH_DATA._id) {
                 file_name = `${nanoid(5)}-${message?.text}-STAKERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
