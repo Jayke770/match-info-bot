@@ -3,6 +3,8 @@ import { config } from 'dotenv'
 if (process.env.NODE_ENV !== "production") config()
 import fetch from 'node-fetch'
 import fs from 'fs-extra'
+import { run } from "@grammyjs/runner"
+import { apiThrottler } from "@grammyjs/transformer-throttler"
 import { Bot, type Context, session, InlineKeyboard, InputFile } from 'grammy'
 import { type Conversation, type ConversationFlavor, conversations, createConversation, } from "@grammyjs/conversations"
 type MyContext = Context & ConversationFlavor
@@ -43,9 +45,12 @@ type Match = {
 }
 //@ts-ignore
 const bot = new Bot<MyContext>(process.env.BOT_TOKEN)
+const throttler = apiThrottler()
+bot.api.config.use(throttler)
 bot.use(session({ initial: () => ({}) }))
 bot.use(conversations())
 async function start(convo: MyConversation, ctx: MyContext) {
+    let file_name: string = ""
     try {
         await ctx.reply(`Hi @${ctx.from?.username}, What can I do for you?`, {
             reply_markup: new InlineKeyboard()
@@ -60,23 +65,24 @@ async function start(convo: MyConversation, ctx: MyContext) {
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
             if (MATCH_DATA) {
+                file_name = `${message?.text}-WINNERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
                     if (x.teamID === MATCH_DATA.winner) {
                         text += `${x.userID},${x.name},${x.amount}\n`
                     }
                 })
-                fs.open(`${message?.text}-WINNERS.csv`, "a", async (err, fd) => {
+                fs.open(file_name, "a", async (err, fd) => {
                     if (err) {
-                        await ctx.reply(err.message)
+                        throw new Error(err.message)
                     } else {
                         fs.write(fd, text, async (err, bytes) => {
                             if (err) {
                                 await ctx.reply(err.message)
                             } else {
                                 //convert to xlsx 
-                                await ctx.replyWithDocument(new InputFile(`${message?.text}-WINNERS.csv`))
-                                await fs.unlink(`${message?.text}-WINNERS.csv`)
+                                await ctx.replyWithDocument(new InputFile(file_name))
+                                await fs.unlink(file_name)
                             }
                         })
                     }
@@ -91,23 +97,24 @@ async function start(convo: MyConversation, ctx: MyContext) {
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
             if (MATCH_DATA) {
+                file_name = `${message?.text}-LOSERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
                     if (x.teamID !== MATCH_DATA.winner) {
                         text += `${x.userID},${x.name},${x.amount}\n`
                     }
                 })
-                fs.open(`${message?.text}-LOSERS.csv`, "a", async (err, fd) => {
+                fs.open(file_name, "a", async (err, fd) => {
                     if (err) {
-                        await ctx.reply(err.message)
+                        throw new Error(err.message)
                     } else {
                         fs.write(fd, text, async (err, bytes) => {
                             if (err) {
                                 await ctx.reply(err.message)
                             } else {
                                 //convert to xlsx 
-                                await ctx.replyWithDocument(new InputFile(`${message?.text}-LOSERS.csv`))
-                                await fs.unlink(`${message?.text}-LOSERS.csv`)
+                                await ctx.replyWithDocument(new InputFile(file_name))
+                                await fs.unlink(file_name)
                             }
                         })
                     }
@@ -122,21 +129,22 @@ async function start(convo: MyConversation, ctx: MyContext) {
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
             if (MATCH_DATA) {
+                file_name = `${message?.text}-BETTORS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
                     text += `${x.userID},${x.name},${x.amount}\n`
                 })
-                fs.open(`${message?.text}-BETTORS.csv`, "a", async (err, fd) => {
+                fs.open(file_name, "a", async (err, fd) => {
                     if (err) {
                         await ctx.reply(err.message)
                     } else {
                         fs.write(fd, text, async (err, bytes) => {
                             if (err) {
-                                await ctx.reply(err.message)
+                                throw new Error(err.message)
                             } else {
                                 //convert to xlsx 
-                                await ctx.replyWithDocument(new InputFile(`${message?.text}-BETTORS.csv`))
-                                await fs.unlink(`${message?.text}-BETTORS.csv`)
+                                await ctx.replyWithDocument(new InputFile(file_name))
+                                await fs.unlink(file_name)
                             }
                         })
                     }
@@ -150,7 +158,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             return
         }
     } catch (e) {
-        console.log(e)
+        await fs.unlink(file_name)
         await ctx.reply("An error occured")
         return
     }
@@ -165,6 +173,7 @@ bot.command("start", async (ctx) => {
         await ctx.reply("401 Unauthorized")
     }
 })
+run(bot)
 const setup = async () => {
     await bot.api.setMyCommands([
         { command: 'start', description: "Start Bot" }
