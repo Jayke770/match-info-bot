@@ -7,6 +7,8 @@ import { run } from "@grammyjs/runner"
 import { apiThrottler } from "@grammyjs/transformer-throttler"
 import { Bot, type Context, session, InlineKeyboard, InputFile } from 'grammy'
 import { type Conversation, type ConversationFlavor, conversations, createConversation, } from "@grammyjs/conversations"
+import { customAlphabet } from 'nanoid'
+const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 12)
 type MyContext = Context & ConversationFlavor
 type MyConversation = Conversation<MyContext>
 type Match = {
@@ -56,7 +58,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             reply_markup: new InlineKeyboard()
                 .text("Get Match Winners", "m-winners").row()
                 .text("Get Match Losers", "m-losers").row()
-                .text("Get Match Bettors", "m-bettors").row()
+                .text("Get Match Bettors", "m-stakers").row()
         })
         const { callbackQuery } = await convo.wait()
         if (callbackQuery?.data === "m-winners") {
@@ -65,7 +67,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
             if (MATCH_DATA) {
-                file_name = `${message?.text}-WINNERS.csv`
+                file_name = `${nanoid(5)}-${message?.text}-WINNERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
                     if (x.teamID === MATCH_DATA.winner) {
@@ -97,7 +99,7 @@ async function start(convo: MyConversation, ctx: MyContext) {
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
             if (MATCH_DATA) {
-                file_name = `${message?.text}-LOSERS.csv`
+                file_name = `${nanoid(5)}-${message?.text}-LOSERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
                     if (x.teamID !== MATCH_DATA.winner) {
@@ -123,13 +125,13 @@ async function start(convo: MyConversation, ctx: MyContext) {
                 await ctx.reply("Match not found")
             }
             return
-        } else if (callbackQuery?.data === "m-bettors") {
+        } else if (callbackQuery?.data === "m-stakers") {
             await ctx.reply("Please enter Match ID:")
             const { message } = await convo.wait()
             await ctx.reply("Checking match...")
             const MATCH_DATA: Match = await fetch(`${process.env.API}${message?.text}`).then(res => res.json())
             if (MATCH_DATA) {
-                file_name = `${message?.text}-BETTORS.csv`
+                file_name = `${nanoid(5)}-${message?.text}-STAKERS.csv`
                 let text = "Userid,Name,Stake Amount\n"
                 MATCH_DATA.bettors.map((x) => {
                     text += `${x.userID},${x.name},${x.amount}\n`
@@ -178,7 +180,6 @@ const setup = async () => {
     await bot.api.setMyCommands([
         { command: 'start', description: "Start Bot" }
     ])
-    await bot.start()
 }
 setup()
 console.log("> Bot Started")
